@@ -9,6 +9,7 @@ import {
   X, Check, AlertCircle, GripVertical, ChevronDown
 } from 'lucide-react'
 import styles from './TeacherDashboard.module.css'
+import EditQuizModal from './EditQuizModal' 
 
 // ─── Create Quiz Modal ──────────────────────────────────────────────────────
 function CreateQuizModal({ onClose, onCreated }) {
@@ -62,7 +63,6 @@ function CreateQuizModal({ onClose, onCreated }) {
   }
 
   const handleSave = async () => {
-    // Validate questions
     for (let i = 0; i < questions.length; i++) {
       const q = questions[i]
       if (!q.text.trim()) { setError(`Question ${i + 1} is empty`); return }
@@ -71,7 +71,6 @@ function CreateQuizModal({ onClose, onCreated }) {
     setError('')
     setSaving(true)
     try {
-      // Insert quiz
       const { data: quiz, error: qError } = await supabase
         .from('quizzes')
         .insert({ title, subject, description, teacher_id: user.id, status: 'draft' })
@@ -79,7 +78,6 @@ function CreateQuizModal({ onClose, onCreated }) {
         .single()
       if (qError) throw qError
 
-      // Insert questions
       const questionRows = questions.map((q, i) => ({
         quiz_id: quiz.id,
         text: q.text,
@@ -102,7 +100,6 @@ function CreateQuizModal({ onClose, onCreated }) {
   return (
     <div className={styles.modalOverlay} onClick={e => e.target === e.currentTarget && onClose()}>
       <div className={styles.modal}>
-        {/* Header */}
         <div className={styles.modalHeader}>
           <div className={styles.modalSteps}>
             <div className={`${styles.modalStep} ${step >= 1 ? styles.stepActive : ''}`}>
@@ -121,9 +118,7 @@ function CreateQuizModal({ onClose, onCreated }) {
             <div className={styles.detailsForm}>
               <h2 className={styles.modalTitle}>Create New Quiz</h2>
               <p className={styles.modalSubtitle}>Set up the basics before adding questions</p>
-
               {error && <div className={styles.formError}><AlertCircle size={14} />{error}</div>}
-
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>Quiz Title *</label>
                 <input
@@ -133,7 +128,6 @@ function CreateQuizModal({ onClose, onCreated }) {
                   onChange={e => setTitle(e.target.value)}
                 />
               </div>
-
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>Subject *</label>
                 <div className={styles.subjectGrid}>
@@ -149,7 +143,6 @@ function CreateQuizModal({ onClose, onCreated }) {
                   ))}
                 </div>
               </div>
-
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>Description <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(optional)</span></label>
                 <textarea
@@ -160,7 +153,6 @@ function CreateQuizModal({ onClose, onCreated }) {
                   rows={3}
                 />
               </div>
-
               <button className={styles.primaryBtn} onClick={handleNext}>
                 Continue to Questions <ChevronRight size={16} />
               </button>
@@ -176,9 +168,7 @@ function CreateQuizModal({ onClose, onCreated }) {
                   <Plus size={15} /> Add Question
                 </button>
               </div>
-
               {error && <div className={styles.formError}><AlertCircle size={14} />{error}</div>}
-
               <div className={styles.questionsList}>
                 {questions.map((q, qi) => (
                   <div key={qi} className={styles.questionCard}>
@@ -188,7 +178,6 @@ function CreateQuizModal({ onClose, onCreated }) {
                         <Trash2 size={14} />
                       </button>
                     </div>
-
                     <textarea
                       className={styles.questionInput}
                       placeholder={`Enter question ${qi + 1}...`}
@@ -196,13 +185,9 @@ function CreateQuizModal({ onClose, onCreated }) {
                       onChange={e => updateQuestion(qi, 'text', e.target.value)}
                       rows={2}
                     />
-
                     <div className={styles.optionsList}>
                       {q.options.map((opt, oi) => (
-                        <div
-                          key={oi}
-                          className={`${styles.optionRow} ${q.correct === oi ? styles.optionCorrect : ''}`}
-                        >
+                        <div key={oi} className={`${styles.optionRow} ${q.correct === oi ? styles.optionCorrect : ''}`}>
                           <button
                             className={`${styles.correctToggle} ${q.correct === oi ? styles.correctActive : ''}`}
                             onClick={() => updateQuestion(qi, 'correct', oi)}
@@ -220,17 +205,11 @@ function CreateQuizModal({ onClose, onCreated }) {
                         </div>
                       ))}
                     </div>
-                    <p className={styles.correctHint}>
-                      <Check size={11} /> Correct answer: Option {String.fromCharCode(65 + q.correct)}
-                    </p>
                   </div>
                 ))}
               </div>
-
               <div className={styles.modalFooter}>
-                <button className={styles.secondaryBtn} onClick={() => setStep(1)}>
-                  ← Back
-                </button>
+                <button className={styles.secondaryBtn} onClick={() => setStep(1)}>← Back</button>
                 <button className={styles.primaryBtn} onClick={handleSave} disabled={saving}>
                   {saving ? <div className={styles.btnSpinner} /> : <><Check size={15} /> Save Quiz</>}
                 </button>
@@ -260,9 +239,10 @@ function SubjectBadge({ subject }) {
 }
 
 // ─── Quiz Card ───────────────────────────────────────────────────────────────
-function QuizCard({ quiz, onDelete }) {
+function QuizCard({ quiz, onDelete, onEdit }) { // Added onEdit prop
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
+  
   const timeAgo = (date) => {
     const diff = Date.now() - new Date(date)
     const days = Math.floor(diff / 86400000)
@@ -281,7 +261,10 @@ function QuizCard({ quiz, onDelete }) {
           </button>
           {menuOpen && (
             <div className={styles.menuDropdown}>
-              <button className={styles.menuItem}><Edit3 size={13} /> Edit</button>
+              {/* Trigger the edit modal */}
+              <button className={styles.menuItem} onClick={() => { onEdit(quiz); setMenuOpen(false); }}>
+                <Edit3 size={13} /> Edit
+              </button>
               <button className={styles.menuItem} style={{ color: '#f87171' }} onClick={() => { onDelete(quiz.id); setMenuOpen(false) }}>
                 <Trash2 size={13} /> Delete
               </button>
@@ -298,7 +281,9 @@ function QuizCard({ quiz, onDelete }) {
           {quiz.status === 'draft' ? 'Draft' : 'Live'}
         </span>
       </div>
-      <button className={styles.playBtn} onClick={() => navigate(`/host/${quiz.id}`)}> <Play size={13} fill="currentColor" /> Launch Quiz </button>
+      <button className={styles.playBtn} onClick={() => navigate(`/host/${quiz.id}`)}>
+        <Play size={13} fill="currentColor" /> Launch Quiz
+      </button>
     </div>
   )
 }
@@ -311,12 +296,12 @@ export default function TeacherDashboard() {
   const [quizzes, setQuizzes] = useState([])
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [editingQuiz, setEditingQuiz] = useState(null) // State for the quiz being edited
   const [searchQuery, setSearchQuery] = useState('')
   const [activeNav, setActiveNav] = useState('dashboard')
 
-  const firstName = user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Teacher'
   const fullName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Teacher'
-
+  const firstName = fullName.split(' ')[0]
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening'
 
@@ -371,14 +356,12 @@ export default function TeacherDashboard() {
 
   return (
     <div className={styles.layout}>
-      {/* ── Sidebar ── */}
       <aside className={styles.sidebar}>
         <div className={styles.sidebarLogo}>
           <div className={styles.logoIcon}><Zap size={15} fill="currentColor" /></div>
           <span className={styles.logoText}>QuizSync</span>
           <span className={styles.logoRole}>Teacher</span>
         </div>
-
         <nav className={styles.sidebarNav}>
           {navItems.map(item => {
             const Icon = item.icon
@@ -395,7 +378,6 @@ export default function TeacherDashboard() {
             )
           })}
         </nav>
-
         <div className={styles.sidebarBottom}>
           <button className={styles.createQuizSideBtn} onClick={() => setShowCreateModal(true)}>
             <Plus size={16} /> Create Quiz
@@ -413,9 +395,7 @@ export default function TeacherDashboard() {
         </div>
       </aside>
 
-      {/* ── Main Content ── */}
       <main className={styles.main}>
-        {/* Header */}
         <header className={styles.header}>
           <div className={styles.headerLeft}>
             <h1 className={styles.pageTitle}>{greeting}, {firstName}.</h1>
@@ -434,93 +414,72 @@ export default function TeacherDashboard() {
           </div>
         </header>
 
-        {/* Stats */}
         <div className={styles.statsRow}>
           <div className={styles.statCard}>
-            <div className={styles.statIcon} style={{ background: 'rgba(34,197,94,0.15)', color: '#22c55e' }}>
-              <BookOpen size={18} />
-            </div>
-            <div>
-              <div className={styles.statValue}>{quizzes.length}</div>
-              <div className={styles.statLabel}>Total Quizzes</div>
-            </div>
+            <div className={styles.statIcon} style={{ background: 'rgba(34,197,94,0.15)', color: '#22c55e' }}><BookOpen size={18} /></div>
+            <div><div className={styles.statValue}>{quizzes.length}</div><div className={styles.statLabel}>Total Quizzes</div></div>
           </div>
           <div className={styles.statCard}>
-            <div className={styles.statIcon} style={{ background: 'rgba(59,130,246,0.15)', color: '#3b82f6' }}>
-              <FileText size={18} />
-            </div>
-            <div>
-              <div className={styles.statValue}>{totalQuestions}</div>
-              <div className={styles.statLabel}>Total Questions</div>
-            </div>
+            <div className={styles.statIcon} style={{ background: 'rgba(59,130,246,0.15)', color: '#3b82f6' }}><FileText size={18} /></div>
+            <div><div className={styles.statValue}>{totalQuestions}</div><div className={styles.statLabel}>Total Questions</div></div>
           </div>
           <div className={styles.statCard}>
-            <div className={styles.statIcon} style={{ background: 'rgba(139,92,246,0.15)', color: '#8b5cf6' }}>
-              <BarChart2 size={18} />
-            </div>
-            <div>
-              <div className={styles.statValue}>{quizzes.filter(q => q.status === 'live').length}</div>
-              <div className={styles.statLabel}>Active Quizzes</div>
-            </div>
+            <div className={styles.statIcon} style={{ background: 'rgba(139,92,246,0.15)', color: '#8b5cf6' }}><BarChart2 size={18} /></div>
+            <div><div className={styles.statValue}>{quizzes.filter(q => q.status === 'live').length}</div><div className={styles.statLabel}>Active Quizzes</div></div>
           </div>
           <div className={styles.statCard}>
-            <div className={styles.statIcon} style={{ background: 'rgba(245,158,11,0.15)', color: '#f59e0b' }}>
-              <Clock size={18} />
-            </div>
-            <div>
-              <div className={styles.statValue}>{quizzes.filter(q => q.status === 'draft').length}</div>
-              <div className={styles.statLabel}>Drafts</div>
-            </div>
+            <div className={styles.statIcon} style={{ background: 'rgba(245,158,11,0.15)', color: '#f59e0b' }}><Clock size={18} /></div>
+            <div><div className={styles.statValue}>{quizzes.filter(q => q.status === 'draft').length}</div><div className={styles.statLabel}>Drafts</div></div>
           </div>
         </div>
 
-        {/* Recent Quizzes */}
         <div className={styles.section}>
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>Recent Quizzes</h2>
-            {quizzes.length > 0 && (
-              <button className={styles.viewAllBtn}>View All <ChevronRight size={14} /></button>
-            )}
+            {quizzes.length > 0 && <button className={styles.viewAllBtn}>View All <ChevronRight size={14} /></button>}
           </div>
 
           {loading ? (
-            <div className={styles.loadingGrid}>
-              {[1, 2, 3].map(i => <div key={i} className={styles.skeletonCard} />)}
-            </div>
+            <div className={styles.loadingGrid}>{[1, 2, 3].map(i => <div key={i} className={styles.skeletonCard} />)}</div>
           ) : filteredQuizzes.length === 0 ? (
             <div className={styles.emptyState}>
               <div className={styles.emptyIcon}><BookOpen size={32} /></div>
               <h3>{searchQuery ? 'No quizzes match your search' : 'No quizzes yet'}</h3>
-              <p>{searchQuery ? 'Try a different keyword' : 'Create your first quiz to get started'}</p>
-              {!searchQuery && (
-                <button className={styles.primaryBtn} onClick={() => setShowCreateModal(true)}>
-                  <Plus size={15} /> Create Your First Quiz
-                </button>
-              )}
+              {!searchQuery && <button className={styles.primaryBtn} onClick={() => setShowCreateModal(true)}><Plus size={15} /> Create Your First Quiz</button>}
             </div>
           ) : (
             <div className={styles.quizzesGrid}>
-              {/* Create New tile */}
               <button className={styles.createTile} onClick={() => setShowCreateModal(true)}>
                 <div className={styles.createTileIcon}><Plus size={22} /></div>
                 <span>Create New Quiz</span>
               </button>
               {filteredQuizzes.map(quiz => (
-                <QuizCard key={quiz.id} quiz={quiz} onDelete={handleDelete} />
+                <QuizCard 
+                  key={quiz.id} 
+                  quiz={quiz} 
+                  onDelete={handleDelete} 
+                  onEdit={setEditingQuiz} // Pass the edit handler
+                />
               ))}
             </div>
           )}
         </div>
       </main>
 
-      {/* Modal */}
+      {/* Render Create Modal */}
       {showCreateModal && (
         <CreateQuizModal
           onClose={() => setShowCreateModal(false)}
-          onCreated={(quiz) => {
-            setQuizzes(prev => [{ ...quiz, question_count: 0 }, ...prev])
-            fetchQuizzes() // refresh with real counts
-          }}
+          onCreated={() => { fetchQuizzes(); setShowCreateModal(false); }}
+        />
+      )}
+
+      {/* Render Edit Modal */}
+      {editingQuiz && (
+        <EditQuizModal
+          quiz={editingQuiz}
+          onClose={() => setEditingQuiz(null)}
+          onSaved={() => { fetchQuizzes(); setEditingQuiz(null); }}
         />
       )}
     </div>
