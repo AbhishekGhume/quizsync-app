@@ -261,6 +261,7 @@ function SubjectBadge({ subject }) {
 
 // ─── Quiz Card ───────────────────────────────────────────────────────────────
 function QuizCard({ quiz, onDelete }) {
+  const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
   const timeAgo = (date) => {
     const diff = Date.now() - new Date(date)
@@ -297,7 +298,7 @@ function QuizCard({ quiz, onDelete }) {
           {quiz.status === 'draft' ? 'Draft' : 'Live'}
         </span>
       </div>
-      <button className={styles.playBtn}><Play size={13} fill="currentColor" /> Launch Quiz</button>
+      <button className={styles.playBtn} onClick={() => navigate(`/host/${quiz.id}`)}> <Play size={13} fill="currentColor" /> Launch Quiz </button>
     </div>
   )
 }

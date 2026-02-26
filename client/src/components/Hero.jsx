@@ -37,7 +37,7 @@ export default function Hero() {
           </p>
 
           <div className={`${styles.cta} animate-fade-in-up animate-delay-3`}>
-            <Link to="/signup" className={styles.ctaPrimary}>
+            <Link to="/dashboard" className={styles.ctaPrimary}>
               Create Assessment
             </Link>
             <Link to="/join" className={styles.ctaSecondary}>

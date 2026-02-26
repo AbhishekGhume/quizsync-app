@@ -19,7 +19,7 @@ export default function Footer() {
           <a href="#" className={styles.link}>Support</a>
         </nav>
 
-        <span className={styles.copy}>© 2024 QuizSync Inc. All rights reserved.</span>
+        <span className={styles.copy}>© 2026 QuizSync Inc. All rights reserved.</span>
       </div>
     </footer>
   )

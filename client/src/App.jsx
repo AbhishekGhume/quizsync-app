@@ -5,6 +5,9 @@ import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 import TeacherDashboard from './pages/TeacherDashboard'
+import HostLobby from './pages/HostLobby'
+import JoinPage from './pages/JoinPage'
+import StudentGame from './pages/StudentGame'
 
 export default function App() {
   return (
@@ -23,6 +26,9 @@ export default function App() {
             }
           />
           <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="/host/:quizId" element={<ProtectedRoute><HostLobby /></ProtectedRoute>} />
+          <Route path="/join" element={<JoinPage />} />
+          <Route path="/play/:sessionId" element={<StudentGame />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
