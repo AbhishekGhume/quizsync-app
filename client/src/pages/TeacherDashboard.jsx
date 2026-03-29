@@ -11,11 +11,13 @@ import {
 import styles from './TeacherDashboard.module.css'
 import EditQuizModal from './EditQuizModal'
 import AIGeneratorModal from './AIGeneratorModal'
+import ReportsPage from './ReportsPage'
+import SettingsPage from './SettingsPage'
 
 // ─── Create Quiz Modal ──────────────────────────────────────────────────────
 function CreateQuizModal({ onClose, onCreated }) {
   const { user } = useAuth()
-  const [step, setStep] = useState(1) // 1: details, 2: questions
+  const [step, setStep] = useState(1)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -288,6 +290,14 @@ function QuizCard({ quiz, onDelete, onEdit }) {
   )
 }
 
+// ─── Page titles/subtitles per nav ───────────────────────────────────────────
+const PAGE_META = {
+  dashboard: { title: null, subtitle: null }, // uses greeting
+  quizzes:   { title: 'My Quizzes',           subtitle: 'Manage and launch your quiz library.' },
+  reports:   { title: 'Reports & Analytics',  subtitle: 'Performance insights across all your sessions.' },
+  settings:  { title: 'Settings',             subtitle: 'Manage your account, security, and preferences.' },
+}
+
 // ─── Main Dashboard ──────────────────────────────────────────────────────────
 export default function TeacherDashboard() {
   const { user, signOut } = useAuth()
@@ -305,6 +315,11 @@ export default function TeacherDashboard() {
   const firstName = fullName.split(' ')[0]
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening'
+
+  // Derive header text based on active nav
+  const pageMeta = PAGE_META[activeNav]
+  const headerTitle    = pageMeta?.title    ?? `${greeting}, ${firstName}.`
+  const headerSubtitle = pageMeta?.subtitle ?? "Here's what's happening in your classroom today."
 
   useEffect(() => {
     fetchQuizzes()
@@ -340,9 +355,7 @@ export default function TeacherDashboard() {
     navigate('/')
   }
 
-  // ─── AI Quiz Save Handler ──────────────────────────────────────────────────
   const handleAISaveQuiz = async (quizData) => {
-    // quizData: { title: string, questions: Array<{ question, options, answer }> }
     try {
       const { data: quiz, error: qError } = await supabase
         .from('quizzes')
@@ -382,11 +395,14 @@ export default function TeacherDashboard() {
 
   const navItems = [
     { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { id: 'quizzes', icon: BookOpen, label: 'My Quizzes' },
-    { id: 'reports', icon: BarChart2, label: 'Reports' },
-    { id: 'ai', icon: Sparkles, label: 'AI Generator' },
-    { id: 'settings', icon: Settings, label: 'Settings' },
+    { id: 'quizzes',   icon: BookOpen,         label: 'My Quizzes' },
+    { id: 'reports',   icon: BarChart2,         label: 'Reports' },
+    { id: 'ai',        icon: Sparkles,          label: 'AI Generator' },
+    { id: 'settings',  icon: Settings,          label: 'Settings' },
   ]
+
+  // Whether to show the dashboard/quizzes content (not reports, settings, etc.)
+  const showDashboardContent = activeNav === 'dashboard' || activeNav === 'quizzes'
 
   return (
     <div className={styles.layout}>
@@ -432,91 +448,121 @@ export default function TeacherDashboard() {
       </aside>
 
       <main className={styles.main}>
+        {/* ── Header — always visible ── */}
         <header className={styles.header}>
           <div className={styles.headerLeft}>
-            <h1 className={styles.pageTitle}>{greeting}, {firstName}.</h1>
-            <p className={styles.pageSubtitle}>Here's what's happening in your classroom today.</p>
+            <h1 className={styles.pageTitle}>{headerTitle}</h1>
+            <p className={styles.pageSubtitle}>{headerSubtitle}</p>
           </div>
-          <div className={styles.headerRight}>
-            <div className={styles.searchBar}>
-              <Search size={15} color="var(--text-muted)" />
-              <input
-                className={styles.searchInput}
-                placeholder="Search quizzes..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-              />
+          {/* Only show search on dashboard/quizzes views */}
+          {showDashboardContent && (
+            <div className={styles.headerRight}>
+              <div className={styles.searchBar}>
+                <Search size={15} color="var(--text-muted)" />
+                <input
+                  className={styles.searchInput}
+                  placeholder="Search quizzes..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                />
+              </div>
             </div>
-          </div>
+          )}
         </header>
 
-        <div className={styles.statsRow}>
-          <div className={styles.statCard}>
-            <div className={styles.statIcon} style={{ background: 'rgba(34,197,94,0.15)', color: '#22c55e' }}><BookOpen size={18} /></div>
-            <div><div className={styles.statValue}>{quizzes.length}</div><div className={styles.statLabel}>Total Quizzes</div></div>
-          </div>
-          <div className={styles.statCard}>
-            <div className={styles.statIcon} style={{ background: 'rgba(59,130,246,0.15)', color: '#3b82f6' }}><FileText size={18} /></div>
-            <div><div className={styles.statValue}>{totalQuestions}</div><div className={styles.statLabel}>Total Questions</div></div>
-          </div>
-          <div className={styles.statCard}>
-            <div className={styles.statIcon} style={{ background: 'rgba(139,92,246,0.15)', color: '#8b5cf6' }}><BarChart2 size={18} /></div>
-            <div><div className={styles.statValue}>{quizzes.filter(q => q.status === 'live').length}</div><div className={styles.statLabel}>Active Quizzes</div></div>
-          </div>
-          <div className={styles.statCard}>
-            <div className={styles.statIcon} style={{ background: 'rgba(245,158,11,0.15)', color: '#f59e0b' }}><Clock size={18} /></div>
-            <div><div className={styles.statValue}>{quizzes.filter(q => q.status === 'draft').length}</div><div className={styles.statLabel}>Drafts</div></div>
-          </div>
-        </div>
+        {/* ── Reports Page ── */}
+        {activeNav === 'reports' && (
+          <ReportsPage onNavigate={setActiveNav} />
+        )}
 
-        <div className={styles.section}>
-          <div className={styles.sectionHeader}>
-            <h2 className={styles.sectionTitle}>Recent Quizzes</h2>
-            {quizzes.length > 0 && <button className={styles.viewAllBtn}>View All <ChevronRight size={14} /></button>}
-          </div>
+        {/* ── Settings Page ── */}
+        {activeNav === 'settings' && (
+          <SettingsPage />
+        )}
 
-          {loading ? (
-            <div className={styles.loadingGrid}>{[1, 2, 3].map(i => <div key={i} className={styles.skeletonCard} />)}</div>
-          ) : filteredQuizzes.length === 0 ? (
-            <div className={styles.emptyState}>
-              <div className={styles.emptyIcon}><BookOpen size={32} /></div>
-              <h3>{searchQuery ? 'No quizzes match your search' : 'No quizzes yet'}</h3>
-              {!searchQuery && (
-                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-                  <button className={styles.primaryBtn} onClick={() => setShowCreateModal(true)}>
-                    <Plus size={15} /> Create Your First Quiz
+        {/* ── Dashboard / Quizzes content ── */}
+        {showDashboardContent && (
+          <>
+            <div className={styles.statsRow}>
+              <div className={styles.statCard}>
+                <div className={styles.statIcon} style={{ background: 'rgba(34,197,94,0.15)', color: '#22c55e' }}><BookOpen size={18} /></div>
+                <div><div className={styles.statValue}>{quizzes.length}</div><div className={styles.statLabel}>Total Quizzes</div></div>
+              </div>
+              <div className={styles.statCard}>
+                <div className={styles.statIcon} style={{ background: 'rgba(59,130,246,0.15)', color: '#3b82f6' }}><FileText size={18} /></div>
+                <div><div className={styles.statValue}>{totalQuestions}</div><div className={styles.statLabel}>Total Questions</div></div>
+              </div>
+              <div className={styles.statCard}>
+                <div className={styles.statIcon} style={{ background: 'rgba(139,92,246,0.15)', color: '#8b5cf6' }}><BarChart2 size={18} /></div>
+                <div><div className={styles.statValue}>{quizzes.filter(q => q.status === 'live').length}</div><div className={styles.statLabel}>Active Quizzes</div></div>
+              </div>
+              <div className={styles.statCard}>
+                <div className={styles.statIcon} style={{ background: 'rgba(245,158,11,0.15)', color: '#f59e0b' }}><Clock size={18} /></div>
+                <div><div className={styles.statValue}>{quizzes.filter(q => q.status === 'draft').length}</div><div className={styles.statLabel}>Drafts</div></div>
+              </div>
+            </div>
+
+            <div className={styles.section}>
+              <div className={styles.sectionHeader}>
+                <h2 className={styles.sectionTitle}>
+                  {activeNav === 'quizzes' ? 'All Quizzes' : 'Recent Quizzes'}
+                </h2>
+                {activeNav === 'dashboard' && quizzes.length > 0 && (
+                  <button className={styles.viewAllBtn} onClick={() => setActiveNav('quizzes')}>
+                    View All <ChevronRight size={14} />
                   </button>
-                  <button className={styles.primaryBtn} onClick={() => setShowAIModal(true)} style={{ background: 'linear-gradient(135deg,#7c3aed,#a78bfa)' }}>
-                    <Sparkles size={15} /> Generate with AI
+                )}
+              </div>
+
+              {loading ? (
+                <div className={styles.loadingGrid}>
+                  {[1, 2, 3].map(i => <div key={i} className={styles.skeletonCard} />)}
+                </div>
+              ) : filteredQuizzes.length === 0 ? (
+                <div className={styles.emptyState}>
+                  <div className={styles.emptyIcon}><BookOpen size={32} /></div>
+                  <h3>{searchQuery ? 'No quizzes match your search' : 'No quizzes yet'}</h3>
+                  {!searchQuery && (
+                    <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+                      <button className={styles.primaryBtn} onClick={() => setShowCreateModal(true)}>
+                        <Plus size={15} /> Create Your First Quiz
+                      </button>
+                      <button className={styles.primaryBtn} onClick={() => setShowAIModal(true)} style={{ background: 'linear-gradient(135deg,#7c3aed,#a78bfa)' }}>
+                        <Sparkles size={15} /> Generate with AI
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className={styles.quizzesGrid}>
+                  <button className={styles.createTile} onClick={() => setShowCreateModal(true)}>
+                    <div className={styles.createTileIcon}><Plus size={22} /></div>
+                    <span>Create New Quiz</span>
                   </button>
+                  <button
+                    className={styles.createTile}
+                    onClick={() => setShowAIModal(true)}
+                    style={{ borderColor: 'rgba(167,139,250,0.3)', background: 'rgba(167,139,250,0.04)' }}
+                  >
+                    <div className={styles.createTileIcon} style={{ color: '#a78bfa' }}><Sparkles size={22} /></div>
+                    <span style={{ color: '#a78bfa' }}>Generate with AI</span>
+                  </button>
+                  {filteredQuizzes.map(quiz => (
+                    <QuizCard
+                      key={quiz.id}
+                      quiz={quiz}
+                      onDelete={handleDelete}
+                      onEdit={setEditingQuiz}
+                    />
+                  ))}
                 </div>
               )}
             </div>
-          ) : (
-            <div className={styles.quizzesGrid}>
-              <button className={styles.createTile} onClick={() => setShowCreateModal(true)}>
-                <div className={styles.createTileIcon}><Plus size={22} /></div>
-                <span>Create New Quiz</span>
-              </button>
-              {/* AI Generate tile */}
-              <button className={styles.createTile} onClick={() => setShowAIModal(true)} style={{ borderColor: 'rgba(167,139,250,0.3)', background: 'rgba(167,139,250,0.04)' }}>
-                <div className={styles.createTileIcon} style={{ color: '#a78bfa' }}><Sparkles size={22} /></div>
-                <span style={{ color: '#a78bfa' }}>Generate with AI</span>
-              </button>
-              {filteredQuizzes.map(quiz => (
-                <QuizCard
-                  key={quiz.id}
-                  quiz={quiz}
-                  onDelete={handleDelete}
-                  onEdit={setEditingQuiz}
-                />
-              ))}
-            </div>
-          )}
-        </div>
+          </>
+        )}
       </main>
 
-      {/* Create Quiz Modal */}
+      {/* ── Modals ── */}
       {showCreateModal && (
         <CreateQuizModal
           onClose={() => setShowCreateModal(false)}
@@ -524,7 +570,6 @@ export default function TeacherDashboard() {
         />
       )}
 
-      {/* Edit Quiz Modal */}
       {editingQuiz && (
         <EditQuizModal
           quiz={editingQuiz}
@@ -533,7 +578,6 @@ export default function TeacherDashboard() {
         />
       )}
 
-      {/* AI Generator Modal */}
       {showAIModal && (
         <AIGeneratorModal
           onClose={() => { setShowAIModal(false); setActiveNav('dashboard') }}
