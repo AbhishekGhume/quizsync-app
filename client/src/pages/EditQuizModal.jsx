@@ -80,6 +80,21 @@ function QuestionEditor({ q, index, total, onChange, onRemove, draggable }) {
             onChange={e => onChange(index, 'text', e.target.value)}
           />
 
+          <div className={styles.timeSection}>
+            <label className={styles.timeLabel}>Display Time</label>
+            <div className={styles.timeInputContainer}>
+              <input
+                type="number"
+                className={styles.timeInput}
+                min="5"
+                max="120"
+                value={q.time_limit || 20}
+                onChange={e => onChange(index, 'time_limit', parseInt(e.target.value) || 20)}
+              />
+              <span className={styles.timeUnit}>seconds</span>
+            </div>
+          </div>
+
           <div className={styles.optionsLabel}>
             Answer Options <span className={styles.optionsHint}>· Click correct answer</span>
           </div>
@@ -147,6 +162,7 @@ export default function EditQuizModal({ quiz, onClose, onSaved }) {
           options: q.options,
           correct_index: q.correct_index,
           order_index: q.order_index,
+          time_limit: q.time_limit || 20,
         })))
       } else {
         // Default empty question if none exist
@@ -164,6 +180,7 @@ export default function EditQuizModal({ quiz, onClose, onSaved }) {
       options: ['', '', '', ''],
       correct_index: 0,
       order_index: orderIdx,
+      time_limit: 20, // Default 20 seconds
     }
   }
 
@@ -212,6 +229,7 @@ export default function EditQuizModal({ quiz, onClose, onSaved }) {
       options: q.options.map(o => o.trim()),
       correct_index: q.correct_index,
       order_index: i,
+      time_limit: q.time_limit,
     }))
 
     const { error: qErr } = await supabase.from('questions').insert(toInsert)

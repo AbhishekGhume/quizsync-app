@@ -31,6 +31,9 @@ export default function StudentGame() {
   const [answeredThisQ, setAnsweredThisQ] = useState(false)
   const [sessionStatus, setSessionStatus] = useState('waiting')
 
+  // Get current question's time limit, default to 20 if not set
+  const currentTimeLimit = currentQ?.time_limit || 20
+
   // Guard: if no participant state, redirect to join
   useEffect(() => {
     if (!participant) {
@@ -71,7 +74,9 @@ export default function StudentGame() {
           setSelectedOption(null)
           setIsCorrect(null)
           setAnsweredThisQ(false)
-          setTimeLeft(TIME_LIMIT)
+          const q = questions[qIdx]
+          const timeLimit = q?.time_limit || 20
+          setTimeLeft(timeLimit)
           setTimerActive(true)
         }
 
@@ -103,7 +108,9 @@ export default function StudentGame() {
           setSelectedOption(null)
           setIsCorrect(null)
           setAnsweredThisQ(false)
-          setTimeLeft(TIME_LIMIT)
+          const q = questions[newIdx]
+          const timeLimit = q?.time_limit || 20
+          setTimeLeft(timeLimit)
           setTimerActive(true)
         }
       })
@@ -147,8 +154,8 @@ export default function StudentGame() {
     setPhase('answered')
 
     // Calculate points (time-based bonus)
-    const timeTaken = (TIME_LIMIT - timeLeft) * 1000
-    const timeBonus = correct ? Math.round((timeLeft / TIME_LIMIT) * POINTS_BASE) : 0
+    const timeTaken = (currentTimeLimit - timeLeft) * 1000
+    const timeBonus = correct ? Math.round((timeLeft / currentTimeLimit) * POINTS_BASE) : 0
     const pts = correct ? Math.max(100, timeBonus) : 0
 
     setPointsEarned(pts)
@@ -187,7 +194,7 @@ export default function StudentGame() {
     setPhase('results')
   }
 
-  const timerPct = (timeLeft / TIME_LIMIT) * 100
+  const timerPct = (timeLeft / currentTimeLimit) * 100
 
   // ── WAITING SCREEN ──
   if (phase === 'waiting') {

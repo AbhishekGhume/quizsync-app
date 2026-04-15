@@ -26,7 +26,7 @@ function CreateQuizModal({ onClose, onCreated }) {
   const [description, setDescription] = useState('')
 
   const [questions, setQuestions] = useState([
-    { text: '', options: ['', '', '', ''], correct: 0 }
+    { text: '', options: ['', '', '', ''], correct: 0, time_limit: 20 }
   ])
 
   const subjectColors = {
@@ -37,7 +37,7 @@ function CreateQuizModal({ onClose, onCreated }) {
   }
 
   const addQuestion = () => {
-    setQuestions(q => [...q, { text: '', options: ['', '', '', ''], correct: 0 }])
+    setQuestions(q => [...q, { text: '', options: ['', '', '', ''], correct: 0, time_limit: 20 }])
   }
 
   const removeQuestion = (i) => {
@@ -87,6 +87,7 @@ function CreateQuizModal({ onClose, onCreated }) {
         options: q.options,
         correct_index: q.correct,
         order_index: i,
+        time_limit: q.time_limit || 20,
       }))
       const { error: questErr } = await supabase.from('questions').insert(questionRows)
       if (questErr) throw questErr
@@ -188,6 +189,20 @@ function CreateQuizModal({ onClose, onCreated }) {
                       onChange={e => updateQuestion(qi, 'text', e.target.value)}
                       rows={2}
                     />
+                    <div className={styles.timeSection}>
+                      <label className={styles.timeLabel}>Display Time</label>
+                      <div className={styles.timeInputContainer}>
+                        <input
+                          type="number"
+                          className={styles.timeInput}
+                          min="5"
+                          max="120"
+                          value={q.time_limit || 20}
+                          onChange={e => updateQuestion(qi, 'time_limit', parseInt(e.target.value) || 20)}
+                        />
+                        <span className={styles.timeUnit}>seconds</span>
+                      </div>
+                    </div>
                     <div className={styles.optionsList}>
                       {q.options.map((opt, oi) => (
                         <div key={oi} className={`${styles.optionRow} ${q.correct === oi ? styles.optionCorrect : ''}`}>
@@ -376,6 +391,7 @@ export default function TeacherDashboard() {
         options: q.options,
         correct_index: q.answer,
         order_index: i,
+        time_limit: 20,
       }))
       const { error: questErr } = await supabase.from('questions').insert(questionRows)
       if (questErr) throw questErr

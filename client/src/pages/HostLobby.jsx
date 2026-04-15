@@ -179,10 +179,13 @@ export default function HostLobby() {
       .update({ status: 'active', started_at: new Date().toISOString(), current_question: 0 })
       .eq('id', session.id)
 
+    const firstQ = questions[0]
+    const initialTime = firstQ?.time_limit || 20
+
     setGamePhase('playing')
     setCurrentQIndex(0)
     setAnswers([])
-    setTimeLeft(20)
+    setTimeLeft(initialTime)
     setShowAnswer(false)
     setTimerActive(true)
   }
@@ -200,9 +203,12 @@ export default function HostLobby() {
       .update({ current_question: next })
       .eq('id', session.id)
 
+    const nextQ = questions[next]
+    const nextTime = nextQ?.time_limit || 20
+
     setCurrentQIndex(next)
     setAnswers([])
-    setTimeLeft(20)
+    setTimeLeft(nextTime)
     setShowAnswer(false)
     setTimerExpired(false)
     setTimerActive(true)
