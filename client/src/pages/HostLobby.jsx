@@ -33,6 +33,8 @@ export default function HostLobby() {
   const [showAnswer, setShowAnswer] = useState(false)
   const [leaderboard, setLeaderboard] = useState([])
   const [ending, setEnding] = useState(false)
+  const [autoAdvance, setAutoAdvance] = useState(false)
+  const [timerExpired, setTimerExpired] = useState(false)
 
   // Load quiz + questions
   useEffect(() => {
@@ -143,12 +145,25 @@ export default function HostLobby() {
       if (timeLeft <= 0 && timerActive) {
         setTimerActive(false)
         setShowAnswer(true)
+        setTimerExpired(true) // Track that timer expired naturally
       }
       return
     }
     const t = setTimeout(() => setTimeLeft(t => t - 1), 1000)
     return () => clearTimeout(t)
   }, [timerActive, timeLeft])
+
+  // Auto-advance logic: only when timer expires naturally and autoAdvance is enabled
+  useEffect(() => {
+    if (!autoAdvance || !timerExpired || gamePhase !== 'playing') return
+
+    const timer = setTimeout(() => {
+      nextQuestion()
+      setTimerExpired(false) // Reset flag for next question
+    }, 2000) // Show correct answer for 2 seconds before auto-advancing
+
+    return () => clearTimeout(timer)
+  }, [timerExpired, autoAdvance, gamePhase])
 
   const copyPin = () => {
     if (!session) return
@@ -189,6 +204,7 @@ export default function HostLobby() {
     setAnswers([])
     setTimeLeft(20)
     setShowAnswer(false)
+    setTimerExpired(false)
     setTimerActive(true)
   }
 
@@ -383,6 +399,18 @@ export default function HostLobby() {
         </div>
 
         <div className={styles.lobbyActions}>
+          <div className={styles.autoAdvanceToggle}>
+            <label className={styles.toggleLabel}>
+              <input
+                type="checkbox"
+                checked={autoAdvance}
+                onChange={(e) => setAutoAdvance(e.target.checked)}
+                disabled={gamePhase === 'playing'}
+              />
+              <span className={styles.toggleText}>Auto-advance questions when timer ends</span>
+            </label>
+            {autoAdvance && <span className={styles.toggleHint}>✓ Enabled</span>}
+          </div>
           <button
             className={styles.startBtn}
             onClick={startGame}
